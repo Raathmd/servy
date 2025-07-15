@@ -23,7 +23,7 @@ defmodule Servy.Handler do
 
   def track(%{status: 404, path: path} = conv) do
     # Logger.info "It's lunchtime somewhere."
-    Logger.warning("Warning: #{path} is on the loose!", conv.path)
+    Logger.warning("Warning: #{path} is on the loose!", conv)
     # Logger.error "Danger Will Robinson!"
 
     # IO.puts("Warning: #{path} is on the loose!")
@@ -80,8 +80,55 @@ defmodule Servy.Handler do
     %{conv | status: 403, response_body: "Deleting a bear is forbidden!"}
   end
 
+  #   # Using a case expression:
+
+  # def route(%{method: "GET", path: "/bears/new"} = conv) do
+  #   pages_path = Path.expand("../../pages", __DIR__)
+  #   file = Path.join(pages_path, "form.html")
+
+  #   case File.read(file) do
+  #     {:ok, content} ->
+  #       %{ conv | status: 200, resp_body: content }
+
+  #     {:error, :enoent} ->
+  #       %{ conv | status: 404, resp_body: "File not found!"}
+
+  #     {:error, reason } ->
+  #       %{ conv | status: 500, resp_body: "File error: #{reason}"}
+  #   end
+  # end
+
+  #   # Using a function clauses:
+
+  # def route(%{method: "GET", path: "/bears/new"} = conv) do
+  #   Path.expand("../../pages", __DIR__)
+  #     |> Path.join("form.html")
+  #     |> File.read
+  #     |> handle_file(conv)
+  # end
+
+  # this is a generic function which captures the filename
+  def route(%{method: "GET", path: "/pages/" <> file} = conv) do
+    Path.expand("../../pages", __DIR__)
+    |> Path.join(file <> ".html")
+    |> File.read()
+    |> handle_file(conv)
+  end
+
   def route(%{path: path} = conv) do
     %{conv | status: 404, response_body: "NO  #{path} here!"}
+  end
+
+  def handle_file({:ok, content}, conv) do
+    %{conv | status: 200, resp_body: content}
+  end
+
+  def handle_file({:error, :enoent}, conv) do
+    %{conv | status: 404, resp_body: "File not found!"}
+  end
+
+  def handle_file({:error, reason}, conv) do
+    %{conv | status: 500, resp_body: "File error: #{reason}"}
   end
 
   def format_response(conv) do
@@ -130,8 +177,6 @@ response = Servy.Handler.handle(request)
 
 IO.puts(response)
 
-
-
 request = """
 GET /bears?id=1 HTTP/1.1
 Host: example.com
@@ -170,6 +215,18 @@ IO.puts(response)
 
 request = """
 GET /bigfoot HTTP/1.1
+Host: example.com
+User-Agent: ExampleBrowser/1.0
+Accept: */*
+
+"""
+
+response = Servy.Handler.handle(request)
+
+IO.puts(response)
+
+request = """
+GET /bears/new HTTP/1.1
 Host: example.com
 User-Agent: ExampleBrowser/1.0
 Accept: */*

@@ -118,7 +118,7 @@ defmodule Servy.Handler do
   # # this is a generic function which captures the filename
   # def route(%{method: "GET", path: "/bears/" <> file} = conv) do
   #   Path.expand("../../pages", __DIR__)
-  #   |> Path.join(file <> ".html") 
+  #   |> Path.join(file <> ".html")
   #   |> File.read()
   #   |> handle_file(conv)
   # end

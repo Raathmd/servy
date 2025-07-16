@@ -32,7 +32,7 @@ defmodule Servy.Handler do
 
   def track(conv), do: conv
 
-  def rewrite_path(%{path: "/wildlife"} = conv) do
+  def rewrite_path(%{method: "GET", path: "/wildlife"} = conv) do
     %{conv | path: "/wildthings"}
   end
 
@@ -52,7 +52,7 @@ defmodule Servy.Handler do
 
   def rewrite_path_captures(conv, nil), do: conv
 
-  def log(conv), do: IO.inspect(conv)
+  def log(conv), do: IO.inspect(conv, label: "Log")
 
   def parse(request) do
     [method, path, _] =
@@ -70,6 +70,21 @@ defmodule Servy.Handler do
 
   def route(%{method: "GET", path: "/bears"} = conv) do
     %{conv | status: 200, response_body: "Teddy, Smokey, Paddington"}
+  end
+
+  def route(%{method: "GET", path: "/bears/new"} = conv) do
+    Path.expand("../../pages", __DIR__)
+    |> Path.join("form.html")
+    |> File.read()
+    |> handle_file(conv)
+  end
+
+  # # this is a generic function which captures the filename
+  def route(%{method: "GET", path: "/bears/" <> file} = conv) do
+    Path.expand("../../pages", __DIR__)
+    |> Path.join(file <> ".html")
+    |> File.read()
+    |> handle_file(conv)
   end
 
   def route(%{method: "GET", path: "/bears" <> id} = conv) do
@@ -100,35 +115,28 @@ defmodule Servy.Handler do
 
   #   # Using a function clauses:
 
-  # def route(%{method: "GET", path: "/bears/new"} = conv) do
+  # # this is a generic function which captures the filename
+  # def route(%{method: "GET", path: "/bears/" <> file} = conv) do
   #   Path.expand("../../pages", __DIR__)
-  #     |> Path.join("form.html")
-  #     |> File.read
-  #     |> handle_file(conv)
+  #   |> Path.join(file <> ".html") 
+  #   |> File.read()
+  #   |> handle_file(conv)
   # end
-
-  # this is a generic function which captures the filename
-  def route(%{method: "GET", path: "/bears/" <> file} = conv) do
-    Path.expand("../../pages", __DIR__)
-    |> Path.join(file <> ".html")
-    |> File.read()
-    |> handle_file(conv)
-  end
 
   def route(%{path: path} = conv) do
     %{conv | status: 404, response_body: "NO  #{path} here!"}
   end
 
   def handle_file({:ok, content}, conv) do
-    %{conv | status: 200, resp_body: content}
+    %{conv | status: 200, response_body: content}
   end
 
   def handle_file({:error, :enoent}, conv) do
-    %{conv | status: 404, resp_body: "File not found!"}
+    %{conv | status: 404, response_body: "File not found!"}
   end
 
   def handle_file({:error, reason}, conv) do
-    %{conv | status: 500, resp_body: "File error: #{reason}"}
+    %{conv | status: 500, response_body: "File error: #{reason}"}
   end
 
   def format_response(conv) do
